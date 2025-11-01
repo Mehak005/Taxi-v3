@@ -6,7 +6,7 @@ import time
 import matplotlib.pyplot as plt
 
 # --- Import your agents ---
-from Q_Learning import QLearningAgent
+from src.Q_Learning import QLearningAgent
 from SARSAA import SARSAAgent
 
 
@@ -130,14 +130,38 @@ def evaluate_agent(env, agent, n_episodes=100):
 
 def watch_agent(agent):
     """Run one episode to watch the trained agent play."""
+
+    # Create the title you want
+    window_title = f"DEMO: {agent.name}"
     print(f"\n--- 🍿 WATCHING: {agent.name} ---")
+
+    # Create a new environment in 'human' mode
     env = gym.make('Taxi-v3', render_mode='human')
+
+    # --- KEY CHANGE 1 ---
+    # Reset the environment FIRST. This initializes the renderer and window.
     state, _ = env.reset()
+
+    # --- KEY CHANGE 2 ---
+    # Now that the window exists, grab it and set the title.
+    try:
+        # This is the modern 'gymnasium' way to get the Pyglet window
+        env.unwrapped.get_wrapper_by_name("RenderFrame").window.set_caption(window_title)
+    except Exception as e:
+        # If it fails (e.g., on a different OS), just print a note.
+        print(f"(Could not set window title: {e})")
+    # --- END OF CHANGES ---
+
     done, truncated = False, False
 
     while not (done or truncated):
+        # Select action greedily (no exploration)
         action = agent.select_action(state, greedy=True)
+
+        # Take the step
         state, reward, done, truncated, _ = env.step(action)
+
+        # Slow down the loop so we can see what's happening
         time.sleep(0.1)
 
     env.close()
