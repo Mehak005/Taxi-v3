@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-11-01 15:26:14",
+  "configuration": {
+    "n_states": 500,
+    "n_actions": 6,
+    "alpha": 0.1,
+    "gamma": 0.99,
+    "epsilon": 1.0,
+    "epsilon_decay": 0.995,
+    "epsilon_min": 0.01,
+    "n_episodes": 2000,
+    "eval_episodes": 100
+  },
+  "training_results": {
+    "Q-Learning": {
+      "final_avg_reward": 7.21,
+      "final_avg_steps": 13.52,
+      "final_success_rate": 1.0,
+      "training_time": 2.725700616836548
+    },
+    "SARSA": {
+      "final_avg_reward": 6.58,
+      "final_avg_steps": 14.06,
+      "final_success_rate": 1.0,
+      "training_time": 2.184760570526123
+    },
+    "Monte Carlo": {
+      "final_avg_reward": -693.16,
+      "final_avg_steps": 199.45,
+      "final_success_rate": 0.01,
+      "training_time": 6.90243124961853
+    }
+  },
+  "evaluation_results": {
+    "Q-Learning": {
+      "avg_reward": -29.32,
+      "std_reward": 79.99948499834233,
+      "avg_steps": 46.54,
+      "std_steps": 71.93516803344522,
+      "success_rate": 0.82
+    },
+    "SARSA": {
+      "avg_reward": -25.58,
+      "std_reward": 76.15644161855253,
+      "avg_steps": 43.22,
+      "std_steps": 68.46146069139921,
+      "success_rate": 0.84
+    },
+    "Monte Carlo": {
+      "avg_reward": -686.0,
+      "std_reward": 799.1270236952321,
+      "avg_steps": 200.0,
+      "std_steps": 0.0,
+      "success_rate": 0.0
+    }
+  }
+}
