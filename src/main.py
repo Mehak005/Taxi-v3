@@ -1,63 +1,13 @@
+# File: main.py
+
 import gymnasium as gym
 import numpy as np
 import time
-from collections import defaultdict
-from SARSAA import QLearningAgent, SARSAAgent
+import matplotlib.pyplot as plt
 
-class QLearningAgent:
-    """
-    Q-Learning: Off-Policy TD Control Algorithm
-
-    Update Rule:
-    Q(S_t, A_t) ← Q(S_t, A_t) + α[R_{t+1} + γ max_a Q(S_{t+1}, a) - Q(S_t, A_t)]
-    """
-
-    def __init__(self, n_states, n_actions, alpha=0.1, gamma=0.99,
-                 epsilon=1.0, epsilon_decay=0.995, epsilon_min=0.01):
-        """Initialize Q-Learning agent."""
-        self.n_states = n_states
-        self.n_actions = n_actions
-        self.alpha = alpha
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.epsilon_decay = epsilon_decay
-        self.epsilon_min = epsilon_min
-
-        # Use defaultdict for a cleaner Q-table
-        # It automatically creates an entry with np.zeros(n_actions)
-        # when a new state is accessed.
-        self.q_table = defaultdict(lambda: np.zeros(n_actions))
-        self.name = "Q-Learning (Off-Policy)"
-
-    def select_action(self, state, greedy=False):
-        """Select action using ε-greedy policy."""
-        if not greedy and np.random.random() < self.epsilon:
-            # Explore: random action
-            return np.random.randint(self.n_actions)
-
-        # Exploit: best action based on current Q-values
-        # (q_table[state] will be created if it doesn't exist)
-        return np.argmax(self.q_table[state])
-
-    def update(self, state, action, reward, next_state, done):
-        """Update Q-value using Q-Learning rule (off-policy)."""
-
-        current_q = self.q_table[state][action]
-
-        if done:
-            td_target = reward
-        else:
-            # Off-policy: use max Q-value (greedy action)
-            # (q_table[next_state] will be created if it doesn't exist)
-            max_next_q = np.max(self.q_table[next_state])
-            td_target = reward + self.gamma * max_next_q
-
-        # Q-Learning update
-        self.q_table[state][action] += self.alpha * (td_target - current_q)
-
-    def decay_epsilon(self):
-        """Decay exploration rate."""
-        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+# --- Import your agents ---
+from Q_Learning import QLearningAgent
+from SARSAA import SARSAAgent
 
 
 def train_agent(env, agent, n_episodes=2000, max_steps=200):
@@ -90,6 +40,8 @@ def train_agent(env, agent, n_episodes=2000, max_steps=200):
         while not (done or truncated) and episode_steps < max_steps:
 
             # --- Q-Learning: selects action inside the loop ---
+            # We check if it's QLearningAgent AND not SARSAAgent
+            # because SARSAAgent is ALSO an instance of QLearningAgent (inheritance)
             if isinstance(agent, QLearningAgent) and not isinstance(agent, SARSAAgent):
                 action = agent.select_action(state)
 
@@ -130,6 +82,7 @@ def train_agent(env, agent, n_episodes=2000, max_steps=200):
 
     return metrics
 
+
 def evaluate_agent(env, agent, n_episodes=100):
     """Evaluate trained agent using greedy policy."""
     total_rewards = []
@@ -148,7 +101,6 @@ def evaluate_agent(env, agent, n_episodes=100):
         truncated = False
 
         while not (done or truncated) and steps < 200:
-            # Use greedy policy (no exploration)
             action = agent.select_action(state, greedy=True)
             state, reward, done, truncated, _ = env.step(action)
             episode_reward += reward
@@ -178,52 +130,91 @@ def evaluate_agent(env, agent, n_episodes=100):
 
 def watch_agent(agent):
     """Run one episode to watch the trained agent play."""
-
     print(f"\n--- 🍿 WATCHING: {agent.name} ---")
-
-    # Create a new environment in 'human' mode
-    # This will open a new window to show the game
     env = gym.make('Taxi-v3', render_mode='human')
-
     state, _ = env.reset()
     done, truncated = False, False
 
     while not (done or truncated):
-        # Select action greedily (no exploration)
         action = agent.select_action(state, greedy=True)
-
-        # Take the step
         state, reward, done, truncated, _ = env.step(action)
-
-        # Slow down the loop so we can see what's happening
-        # (0.1 seconds between frames)
         time.sleep(0.1)
 
     env.close()
     print("Demo finished.")
+
+
+def plot_comparison(results_dict, save_path='comparison_plots.png', show=True):
+    """Create comparison plots for multiple algorithms."""
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+    fig.suptitle('RL Algorithm Comparison: Taxi-v3 Environment',
+                 fontsize=16, fontweight='bold')
+
+    colors = ['#2E86AB', '#A23B72', '#F18F01']  # QL, SARSA, MC
+
+    def smooth(data, window=50):
+        if len(data) < window:
+            return data
+        return np.convolve(data, np.ones(window) / window, mode='valid')
+
+    # Plot 1: Episode Rewards
+    ax = axes[0, 0]
+    for idx, (name, metrics) in enumerate(results_dict.items()):
+        if 'episode_rewards' in metrics:
+            smoothed = smooth(metrics['episode_rewards'])
+            x = np.arange(len(smoothed))
+            ax.plot(x, smoothed, label=name, color=colors[idx], linewidth=2, alpha=0.9)
+    ax.set_xlabel('Episode', fontsize=11, fontweight='bold')
+    ax.set_ylabel('Episode Reward', fontsize=11, fontweight='bold')
+    ax.set_title('Learning Curve: Cumulative Reward per Episode', fontsize=12, fontweight='bold')
+    ax.legend(loc='lower right', fontsize=10)
+    ax.grid(True, alpha=0.3, linestyle='--')
+
+    # Plot 2: Steps to Completion
+    ax = axes[0, 1]
+    for idx, (name, metrics) in enumerate(results_dict.items()):
+        if 'episode_steps' in metrics:
+            smoothed = smooth(metrics['episode_steps'])
+            x = np.arange(len(smoothed))
+            ax.plot(x, smoothed, label=name, color=colors[idx], linewidth=2, alpha=0.9)
+    ax.set_xlabel('Episode', fontsize=11, fontweight='bold')
+    ax.set_ylabel('Steps to Complete', fontsize=11, fontweight='bold')
+    ax.set_title('Efficiency: Steps per Episode', fontsize=12, fontweight='bold')
+    ax.legend(loc='upper right', fontsize=10)
+    ax.grid(True, alpha=0.3, linestyle='--')
+
+    # Hide the other two empty plots
+    axes[1, 0].set_visible(False)
+    axes[1, 1].set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"\n📊 Plots saved to: {save_path}")
+
+    if show:
+        plt.show()
+
+
 def main():
-    """
-    Main execution function.
-    Trains and evaluates Q-Learning and SARSA agents.
-    """
+    """Main execution function."""
     print("\n" + "=" * 70)
     print("REINFORCEMENT LEARNING: TAXI-V3 (Q-Learning vs. SARSA)")
     print("=" * 70)
 
-    # 1. Create Taxi-v3 environment
+    # 1. Create *headless* environment for training
     env = gym.make('Taxi-v3')
 
     # 2. Hyperparameter configuration
     config = {
         'n_states': 500,
         'n_actions': 6,
-        'alpha': 0.1,  # Learning rate
-        'gamma': 0.99,  # Discount factor
-        'epsilon': 1.0,  # Initial exploration rate
-        'epsilon_decay': 0.995,  # Epsilon decay rate
-        'epsilon_min': 0.01,  # Minimum epsilon
-        'n_episodes': 2000,  # Training episodes
-        'eval_episodes': 100  # Evaluation episodes
+        'alpha': 0.1,
+        'gamma': 0.99,
+        'epsilon': 1.0,
+        'epsilon_decay': 0.995,
+        'epsilon_min': 0.01,
+        'n_episodes': 2000,
+        'eval_episodes': 100
     }
 
     # 3. Initialize agents
@@ -235,7 +226,7 @@ def main():
         ),
         SARSAAgent(
             config['n_states'], config['n_actions'],
-            config['alpha'], config['gamma'],  # <-- FIX 1: Corrected typo 'gamma'
+            config['alpha'], config['gamma'],
             config['epsilon'], config['epsilon_decay'], config['epsilon_min']
         )
     ]
@@ -244,52 +235,37 @@ def main():
     all_training_metrics = {}
     all_eval_metrics = {}
 
-    # 5. --- CORRECTED LOOP ---
-    # Loop through each agent to train and evaluate it
+    # 5. --- Loop to train and evaluate ---
     for agent in agents:
-        # Train
         train_metrics = train_agent(env, agent, n_episodes=config['n_episodes'])
-
-        # Evaluate
         eval_metrics = evaluate_agent(env, agent, n_episodes=config['eval_episodes'])
-
-        # --- FIX 2: These lines are NOW INSIDE the loop ---
-        # Store the results for this agent
         all_training_metrics[agent.name] = train_metrics
         all_eval_metrics[agent.name] = eval_metrics
 
-    # --- END OF LOOP ---
+    # 6. Close the training environment
+    env.close()
 
-    # 6. Print summary
+    # 7. Print summary
     print("\n" + "=" * 70)
     print("FINAL RESULTS SUMMARY")
     print("=" * 70)
     print(f"\n{'Algorithm':<20} {'Avg Reward':<15} {'Success Rate':<15}")
     print("-" * 70)
-
     for name, metrics in all_eval_metrics.items():
         print(f"{name:<20} {metrics['avg_reward']:>6.2f}         "
               f"{metrics['success_rate'] * 100:>6.1f}%")
     print("=" * 70)
 
+    # 8. Show plot
+    plot_comparison(all_training_metrics)
 
-    # --- ADD THIS PART ---
+    # 9. Run demos
     print("\n✅ Comparison run complete! Showing demos...")
-
-    # 'agents' is the list of your trained agents
-    # Watch the Q-Learning agent (the first one)
-    watch_agent(agents[0])
-
-    # Watch the SARSA agent (the second one)
-    watch_agent(agents[1])
-    # --- END OF ADDED PART ---
+    for agent in agents:
+        watch_agent(agent)
 
     print("\nAll tasks complete!")
-    env.close()  # Now you can close the original 'headless' env
-    print("\n✅ Comparison run complete!")
-    env.close()
 
 
-# This block ensures 'main()' is only called when you run the script directly
 if __name__ == "__main__":
     main()

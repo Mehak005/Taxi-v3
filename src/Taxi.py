@@ -638,10 +638,10 @@ def main():
         save_agent(agent, filename)
 
     # Generate comparison plots
-    plot_comparison(training_results, save_path='comparison_plots.png', show=False)
+    plot_comparison(training_results, save_path='../comparison_plots.png', show=False)
 
     # Save all results
-    save_results(training_results, eval_results, config, filename='results.json')
+    save_results(training_results, eval_results, config, filename='../results.json')
 
     # Print summary
     print("\n" + "="*70)
