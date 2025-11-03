@@ -6,7 +6,7 @@ import time
 import matplotlib.pyplot as plt
 
 # --- Import your agents ---
-from src.Q_Learning import QLearningAgent
+from Q_Learning import QLearningAgent
 from SARSAA import SARSAAgent
 
 
@@ -167,7 +167,6 @@ def watch_agent(agent):
     env.close()
     print("Demo finished.")
 
-
 def plot_comparison(results_dict, save_path='comparison_plots.png', show=True):
     """Create comparison plots for multiple algorithms."""
     fig, axes = plt.subplots(2, 2, figsize=(16, 10))
@@ -232,13 +231,13 @@ def main():
     config = {
         'n_states': 500,
         'n_actions': 6,
-        'alpha': 0.1,
-        'gamma': 0.99,
+        'alpha': 0.15,
+        'gamma': 0.97,
         'epsilon': 1.0,
-        'epsilon_decay': 0.995,
+        'epsilon_decay': 0.997,
         'epsilon_min': 0.01,
-        'n_episodes': 2000,
-        'eval_episodes': 100
+        'n_episodes': 2500, #no of times trained-runs
+        'eval_episodes': 150#testing evaln
     }
 
     # 3. Initialize agents
