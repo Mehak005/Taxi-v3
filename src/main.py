@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 # --- Import your agents ---
 from Q_Learning import QLearningAgent
 from SARSAA import SARSAAgent
-
+from monte_carlo import MonteCarloAgent
+from dqn_agent import DQNAgent
 
 def train_agent(env, agent, n_episodes=2000, max_steps=200):
     """
@@ -42,7 +43,7 @@ def train_agent(env, agent, n_episodes=2000, max_steps=200):
             # --- Q-Learning: selects action inside the loop ---
             # We check if it's QLearningAgent AND not SARSAAgent
             # because SARSAAgent is ALSO an instance of QLearningAgent (inheritance)
-            if isinstance(agent, QLearningAgent) and not isinstance(agent, SARSAAgent):
+            if not isinstance(agent, SARSAAgent):
                 action = agent.select_action(state)
 
             # Take action
@@ -242,15 +243,28 @@ def main():
 
     # 3. Initialize agents
     agents = [
-        QLearningAgent(
+        # QLearningAgent(
+        #     config['n_states'], config['n_actions'],
+        #     config['alpha'], config['gamma'],
+        #     config['epsilon'], config['epsilon_decay'], config['epsilon_min']
+        # ),
+        # SARSAAgent(
+        #     config['n_states'], config['n_actions'],
+        #     config['alpha'], config['gamma'],
+        #     config['epsilon'], config['epsilon_decay'], config['epsilon_min']
+        # ),
+        # MonteCarloAgent(
+        #     config['n_states'], config['n_actions'],
+        #     config['alpha'], config['gamma'],
+        #     config['epsilon'], config['epsilon_decay'], config['epsilon_min']
+        # ),
+        DQNAgent(
             config['n_states'], config['n_actions'],
-            config['alpha'], config['gamma'],
-            config['epsilon'], config['epsilon_decay'], config['epsilon_min']
-        ),
-        SARSAAgent(
-            config['n_states'], config['n_actions'],
-            config['alpha'], config['gamma'],
-            config['epsilon'], config['epsilon_decay'], config['epsilon_min']
+            alpha=0.001,  # DQN needs a smaller learning rate than Q-Learning!
+            gamma=config['gamma'],
+            epsilon=config['epsilon'],
+            epsilon_decay=config['epsilon_decay'],
+            epsilon_min=config['epsilon_min']
         )
     ]
 
