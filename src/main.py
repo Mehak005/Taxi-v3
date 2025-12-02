@@ -4,6 +4,7 @@ import gymnasium as gym
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+from LargerTaxi import TaxiLargeEnv
 
 # --- Import your agents ---
 from Q_Learning import QLearningAgent
@@ -129,7 +130,7 @@ def evaluate_agent(env, agent, n_episodes=100):
     }
 
 
-def watch_agent(agent):
+def watch_agent(agent, use_large_env=False):
     """Run one episode to watch the trained agent play."""
 
     # Create the title you want
@@ -137,7 +138,11 @@ def watch_agent(agent):
     print(f"\n--- 🍿 WATCHING: {agent.name} ---")
 
     # Create a new environment in 'human' mode
-    env = gym.make('Taxi-v3', render_mode='human')
+    if use_large_env:
+        env = TaxiLargeEnv(grid_size=10, render_mode='ansi')
+        print("(Using ASCII rendering for LargerTaxi environment)")
+    else:
+        env = gym.make('Taxi-v3', render_mode='human')
 
     # --- KEY CHANGE 1 ---
     # Reset the environment FIRST. This initializes the renderer and window.
@@ -145,25 +150,34 @@ def watch_agent(agent):
 
     # --- KEY CHANGE 2 ---
     # Now that the window exists, grab it and set the title.
-    try:
-        # This is the modern 'gymnasium' way to get the Pyglet window
-        env.unwrapped.get_wrapper_by_name("RenderFrame").window.set_caption(window_title)
-    except Exception as e:
-        # If it fails (e.g., on a different OS), just print a note.
-        print(f"(Could not set window title: {e})")
+    if not use_large_env:
+        try:
+            # This is the modern 'gymnasium' way to get the Pyglet window
+            env.unwrapped.get_wrapper_by_name("RenderFrame").window.set_caption(window_title)
+        except Exception as e:
+            # If it fails (e.g., on a different OS), just print a note.
+            print(f"(Could not set window title: {e})")
     # --- END OF CHANGES ---
 
     done, truncated = False, False
+    step_count = 0
 
-    while not (done or truncated):
+    while not (done or truncated) and step_count < 200:
         # Select action greedily (no exploration)
         action = agent.select_action(state, greedy=True)
 
         # Take the step
         state, reward, done, truncated, _ = env.step(action)
+        step_count +=1
 
+
+        if use_large_env:
+            print(f"\nStep {step_count}:")
+            print(env.render())
+            time.sleep(0.3)
+        else:
         # Slow down the loop so we can see what's happening
-        time.sleep(0.1)
+            time.sleep(0.1)
 
     env.close()
     print("Demo finished.")
@@ -221,12 +235,31 @@ def plot_comparison(results_dict, save_path='comparison_plots.png', show=True):
 
 def main():
     """Main execution function."""
+    # Choose environment: 'Taxi-v3' or 'TaxiLarge-v3'
+    USE_LARGE_TAXI = True # Set to True to use the larger environment
+    GRID_SIZE = 10  # Only used if USE_LARGE_TAXI = True
+
     print("\n" + "=" * 70)
-    print("REINFORCEMENT LEARNING: TAXI-V3 (Q-Learning vs. SARSA)")
+    if USE_LARGE_TAXI:
+        print(f"REINFORCEMENT LEARNING: LARGER TAXI {GRID_SIZE}x{GRID_SIZE}")
+    else:
+        print("REINFORCEMENT LEARNING: TAXI-V3")
     print("=" * 70)
 
-    # 1. Create *headless* environment for training
-    env = gym.make('Taxi-v3')
+    
+
+    # 1. Create environment for training
+    if USE_LARGE_TAXI:
+        env = TaxiLargeEnv(grid_size=GRID_SIZE)
+        env_name = f'TaxiLarge-v3 (Grid: {GRID_SIZE}x{GRID_SIZE})'
+        n_states = GRID_SIZE * GRID_SIZE * 5 * 4
+        print(f"Using Custom Environment: {env_name}")
+        print(f"State Space Size: {n_states}")
+    else:
+        env = gym.make('Taxi-v3')
+        env_name = 'Taxi-v3'
+        n_states = 500
+        print(f"Using Standard Environment: {env_name}")
 
     # 2. Hyperparameter configuration
     config = {
@@ -237,35 +270,36 @@ def main():
         'epsilon': 1.0,
         'epsilon_decay': 0.997,
         'epsilon_min': 0.01,
-        'n_episodes': 2500, #no of times trained-runs
-        'eval_episodes': 150#testing evaln
+        'n_episodes': 3000 if USE_LARGE_TAXI else 2500, #no of times trained-runs
+        'eval_episodes': 150,#testing evaln
+         
     }
 
     # 3. Initialize agents
     agents = [
-        # QLearningAgent(
-        #     config['n_states'], config['n_actions'],
-        #     config['alpha'], config['gamma'],
-        #     config['epsilon'], config['epsilon_decay'], config['epsilon_min']
-        # ),
-        # SARSAAgent(
-        #     config['n_states'], config['n_actions'],
-        #     config['alpha'], config['gamma'],
-        #     config['epsilon'], config['epsilon_decay'], config['epsilon_min']
-        # ),
+         QLearningAgent(
+             config['n_states'], config['n_actions'],
+             config['alpha'], config['gamma'],
+             config['epsilon'], config['epsilon_decay'], config['epsilon_min']
+         ),
+         SARSAAgent(
+             config['n_states'], config['n_actions'],
+             config['alpha'], config['gamma'],
+             config['epsilon'], config['epsilon_decay'], config['epsilon_min']
+         ),
         # MonteCarloAgent(
         #     config['n_states'], config['n_actions'],
         #     config['alpha'], config['gamma'],
         #     config['epsilon'], config['epsilon_decay'], config['epsilon_min']
         # ),
-        DQNAgent(
-            config['n_states'], config['n_actions'],
-            alpha=0.001,  # DQN needs a smaller learning rate than Q-Learning!
-            gamma=config['gamma'],
-            epsilon=config['epsilon'],
-            epsilon_decay=config['epsilon_decay'],
-            epsilon_min=config['epsilon_min']
-        )
+        # DQNAgent(
+        #    config['n_states'], config['n_actions'],
+        #    alpha=0.001,  # DQN needs a smaller learning rate than Q-Learning!
+        #    gamma=config['gamma'],
+         #   epsilon=config['epsilon'],
+         #   epsilon_decay=config['epsilon_decay'],
+         #   epsilon_min=config['epsilon_min']
+       # )
     ]
 
     # 4. Dictionaries to store results
@@ -299,7 +333,10 @@ def main():
     # 9. Run demos
     print("\n✅ Comparison run complete! Showing demos...")
     for agent in agents:
-        watch_agent(agent)
+        if USE_LARGE_TAXI:
+            watch_agent(agent, use_large_env='TaxiLarge-v3')
+        else:
+            watch_agent(agent, env_name='Taxi-v3')
 
     print("\nAll tasks complete!")
 
