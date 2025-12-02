@@ -6,6 +6,7 @@ import time
 import matplotlib.pyplot as plt
 from LargerTaxi import TaxiLargeEnv
 
+
 # --- Import your agents ---
 from Q_Learning import QLearningAgent
 from SARSAA import SARSAAgent
@@ -287,19 +288,19 @@ def main():
              config['alpha'], config['gamma'],
              config['epsilon'], config['epsilon_decay'], config['epsilon_min']
          ),
-        # MonteCarloAgent(
-        #     config['n_states'], config['n_actions'],
-        #     config['alpha'], config['gamma'],
-        #     config['epsilon'], config['epsilon_decay'], config['epsilon_min']
-        # ),
+         MonteCarloAgent(
+             config['n_states'], config['n_actions'],
+             config['alpha'], config['gamma'],
+             config['epsilon'], config['epsilon_decay'], config['epsilon_min']
+         ),
         # DQNAgent(
         #    config['n_states'], config['n_actions'],
         #    alpha=0.001,  # DQN needs a smaller learning rate than Q-Learning!
         #    gamma=config['gamma'],
-         #   epsilon=config['epsilon'],
-         #   epsilon_decay=config['epsilon_decay'],
-         #   epsilon_min=config['epsilon_min']
-       # )
+        #   epsilon=config['epsilon'],
+        #    epsilon_decay=config['epsilon_decay'],
+        #    epsilon_min=config['epsilon_min']
+      #  )
     ]
 
     # 4. Dictionaries to store results
@@ -336,7 +337,7 @@ def main():
         if USE_LARGE_TAXI:
             watch_agent(agent, use_large_env='TaxiLarge-v3')
         else:
-            watch_agent(agent, env_name='Taxi-v3')
+            watch_agent(agent)
 
     print("\nAll tasks complete!")
 

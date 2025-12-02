@@ -1,6 +1,14 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import sys
+
+COLOR_RED = "\033[31m"
+COLOR_GREEN = "\033[32m"
+COLOR_YELLOW = "\033[33m"
+COLOR_BLUE = "\033[34m"
+COLOR_RESET = "\033[0m"
+COLOR_BOLD = "\033[1m"
 
 class TaxiLargeEnv(gym.Env):
 
@@ -151,17 +159,53 @@ class TaxiLargeEnv(gym.Env):
         return state, reward, terminated, truncated, {}
 
     def render(self):
-        """Simple ASCII rendering."""
-        out = ""
+        """Faithful Taxi-v3 ASCII renderer (scaled for larger grids)."""
+        out = []
+
+        # Top border
+        out.append("+" + "-" * (self.grid_size * 2 - 1) + "+")
+
+        # Color letters for original 4 locations
+        loc_letters = ["R", "G", "Y", "B"]
+        loc_colors = [COLOR_RED, COLOR_GREEN, COLOR_YELLOW, COLOR_BLUE]
+
         for r in range(self.grid_size):
-            row = ""
+            row_str = "|"
+
             for c in range(self.grid_size):
+
+                # Determine if a wall is to the right
+                right_wall = (r, c) in self.walls
+
+                # Taxi position
                 if (r, c) == (self.taxi_row, self.taxi_col):
-                    row += "T "
+                    cell = COLOR_YELLOW + ("T*" if self.passenger_loc == self.in_taxi else "T") + COLOR_RESET
                 else:
-                    row += ". "
-            out += row + "\n"
-        return out
+                    cell = "."
+
+                # Pickup/dropoff locations
+                for i, (lr, lc) in enumerate(self.locs):
+                    if (r, c) == (lr, lc):
+                        cell = loc_colors[i] + loc_letters[i] + COLOR_RESET
+
+                row_str += cell
+
+                # Wall or space to the right
+                row_str += "|" if right_wall else " "
+
+            row_str += "|"
+            out.append(row_str)
+
+        # Bottom border
+        out.append("+" + "-" * (self.grid_size * 2 - 1) + "+")
+
+        # Combine and print or return
+        output = "\n".join(out)
+        if self.render_mode == "ansi":
+            return output
+        else:
+            print(output)
+            return output
 
 from gymnasium.envs.registration import register
 
