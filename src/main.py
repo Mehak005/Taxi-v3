@@ -255,8 +255,7 @@ def get_user_choice():
 def main():
     """Main execution function."""
     # Choose environment: 'Taxi-v3' or 'TaxiLarge-v3'
-    #USE_LARGE_TAXI = True # Set to True to use the larger environment
-    #GRID_SIZE = 10  # Only used if USE_LARGE_TAXI = True
+  
 
     use_large_taxi = get_user_choice()
 
@@ -268,14 +267,6 @@ def main():
         env_name = f"Large Taxi ({grid_size}x{grid_size})"
 
     
-
-    # 1. Create environment for training
-   # if USE_LARGE_TAXI:
-    #    env = TaxiLargeEnv(grid_size=GRID_SIZE)
-   #     env_name = f'TaxiLarge-v3 (Grid: {GRID_SIZE}x{GRID_SIZE})'
-    #    n_states = GRID_SIZE * GRID_SIZE * 5 * 4
-    #    print(f"Using Custom Environment: {env_name}")
-    #    print(f"State Space Size: {n_states}")
     else:
         env = gym.make('Taxi-v3')
         env_name = 'Taxi-v3'
