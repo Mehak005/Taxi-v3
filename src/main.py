@@ -189,7 +189,7 @@ def plot_comparison(results_dict, save_path='comparison_plots.png', show=True):
     fig.suptitle('RL Algorithm Comparison: Taxi-v3 Environment',
                  fontsize=16, fontweight='bold')
 
-    colors = ['#2E86AB', '#A23B72', '#F18F01']  # QL, SARSA, MC
+    colors = ['#2E86AB', '#A23B72', '#F18F01', "#20C71D"]  # QL, SARSA, MC, DQN
 
     def smooth(data, window=50):
         if len(data) < window:
@@ -233,29 +233,49 @@ def plot_comparison(results_dict, save_path='comparison_plots.png', show=True):
     if show:
         plt.show()
 
+def get_user_choice():
+    """Get user's choice for which environment to use."""
+    print("\n" + "=" * 70)
+    print("REINFORCEMENT LEARNING: TAXI ENVIRONMENT")
+    print("=" * 70)
+    print("\nSelect environment:")
+    print("1. Standard Taxi-v3 (5x5 grid, 500 states)")
+    print("2. Large Taxi (10x10 grid, 2000 states)")
+    
+    while True:
+        choice = input("\nEnter your choice (1 or 2): ").strip()
+        if choice == '1':
+            return False
+        elif choice == '2':
+            return True
+        else:
+            print("Invalid choice. Please enter 1 or 2.")
+
 
 def main():
     """Main execution function."""
     # Choose environment: 'Taxi-v3' or 'TaxiLarge-v3'
-    USE_LARGE_TAXI = True # Set to True to use the larger environment
-    GRID_SIZE = 10  # Only used if USE_LARGE_TAXI = True
+    #USE_LARGE_TAXI = True # Set to True to use the larger environment
+    #GRID_SIZE = 10  # Only used if USE_LARGE_TAXI = True
 
-    print("\n" + "=" * 70)
-    if USE_LARGE_TAXI:
-        print(f"REINFORCEMENT LEARNING: LARGER TAXI {GRID_SIZE}x{GRID_SIZE}")
-    else:
-        print("REINFORCEMENT LEARNING: TAXI-V3")
-    print("=" * 70)
+    use_large_taxi = get_user_choice()
+
+    if use_large_taxi:
+        grid_size = 10
+        env = TaxiLargeEnv(grid_size=grid_size)
+        env.reset(seed=42)
+        n_states = grid_size * grid_size * 5 * 4  # 2000
+        env_name = f"Large Taxi ({grid_size}x{grid_size})"
 
     
 
     # 1. Create environment for training
-    if USE_LARGE_TAXI:
-        env = TaxiLargeEnv(grid_size=GRID_SIZE)
-        env_name = f'TaxiLarge-v3 (Grid: {GRID_SIZE}x{GRID_SIZE})'
-        n_states = GRID_SIZE * GRID_SIZE * 5 * 4
-        print(f"Using Custom Environment: {env_name}")
-        print(f"State Space Size: {n_states}")
+   # if USE_LARGE_TAXI:
+    #    env = TaxiLargeEnv(grid_size=GRID_SIZE)
+   #     env_name = f'TaxiLarge-v3 (Grid: {GRID_SIZE}x{GRID_SIZE})'
+    #    n_states = GRID_SIZE * GRID_SIZE * 5 * 4
+    #    print(f"Using Custom Environment: {env_name}")
+    #    print(f"State Space Size: {n_states}")
     else:
         env = gym.make('Taxi-v3')
         env_name = 'Taxi-v3'
@@ -264,14 +284,14 @@ def main():
 
     # 2. Hyperparameter configuration
     config = {
-        'n_states': 500,
+        'n_states': n_states,
         'n_actions': 6,
         'alpha': 0.15,
         'gamma': 0.97,
         'epsilon': 1.0,
         'epsilon_decay': 0.997,
         'epsilon_min': 0.01,
-        'n_episodes': 3000 if USE_LARGE_TAXI else 2500, #no of times trained-runs
+        'n_episodes': 3000 if use_large_taxi else 2500, #no of times trained-runs
         'eval_episodes': 150,#testing evaln
          
     }
@@ -293,14 +313,14 @@ def main():
              config['alpha'], config['gamma'],
              config['epsilon'], config['epsilon_decay'], config['epsilon_min']
          ),
-        # DQNAgent(
-        #    config['n_states'], config['n_actions'],
-        #    alpha=0.001,  # DQN needs a smaller learning rate than Q-Learning!
-        #    gamma=config['gamma'],
-        #   epsilon=config['epsilon'],
-        #    epsilon_decay=config['epsilon_decay'],
-        #    epsilon_min=config['epsilon_min']
-      #  )
+         DQNAgent(
+           config['n_states'], config['n_actions'],
+            alpha=0.001,  # DQN needs a smaller learning rate than Q-Learning!
+            gamma=config['gamma'],
+           epsilon=config['epsilon'],
+            epsilon_decay=config['epsilon_decay'],
+           epsilon_min=config['epsilon_min']
+        )
     ]
 
     # 4. Dictionaries to store results
@@ -334,7 +354,7 @@ def main():
     # 9. Run demos
     print("\n✅ Comparison run complete! Showing demos...")
     for agent in agents:
-        if USE_LARGE_TAXI:
+        if use_large_taxi:
             watch_agent(agent, use_large_env='TaxiLarge-v3')
         else:
             watch_agent(agent)
